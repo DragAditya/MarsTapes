@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useApp } from '@/store/AppContext';
 import {
   MessageCircle,
@@ -21,7 +21,6 @@ interface ShareExportModalProps {
 export function ShareExportModal({ isOpen, onClose }: ShareExportModalProps) {
   const { state, dispatch } = useApp();
   const { currentReceipt, settings } = state;
-  const captureRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -119,23 +118,11 @@ export function ShareExportModal({ isOpen, onClose }: ShareExportModalProps) {
   }, [currentReceipt.receiptNo, dispatch]);
 
   // Share via WhatsApp
-  const handleShareWhatsApp = useCallback(async () => {
-    setLoading(true);
-    try {
-      const el = document.getElementById('receipt-preview-card');
-      if (!el) return;
+const handleShareWhatsApp = useCallback(async () => {
+  setLoading(true);
 
-      const savedTransform = (el as HTMLElement).style.transform;
-      (el as HTMLElement).style.transform = 'none';
-
-      const canvas = await html2canvas(el as HTMLElement, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-      });
-
-      (el as HTMLElement).style.transform = savedTransform;
-
-      const message = `Receipt No: ${currentReceipt.receiptNo}
+  try {
+    const message = `Receipt No: ${currentReceipt.receiptNo}
 Customer: ${currentReceipt.customerName}
 Amount: ${settings.general.currencySymbol}${currentReceipt.grandTotal.toFixed(2)}
 Date: ${currentReceipt.date}
@@ -144,21 +131,24 @@ From: ${settings.company.name}
 ${settings.company.address}
 ${settings.company.mobile1}`;
 
-      // For WhatsApp Web
-      const encodedMessage = encodeURIComponent(message);
-      const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
 
-      window.open(whatsappUrl, '_blank');
-      showSuccess('Opening WhatsApp...');
-    } catch (error) {
-      dispatch({
-        type: 'ADD_TOAST',
-        payload: { message: 'Failed to prepare WhatsApp', type: 'error' },
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [currentReceipt, settings, dispatch]);
+    window.open(whatsappUrl, '_blank');
+
+    showSuccess('Opening WhatsApp...');
+  } catch (error) {
+    dispatch({
+      type: 'ADD_TOAST',
+      payload: {
+        message: 'Failed to prepare WhatsApp',
+        type: 'error',
+      },
+    });
+  } finally {
+    setLoading(false);
+  }
+}, [currentReceipt, settings, dispatch]);
 
   // Copy to Clipboard (text format)
   const handleCopyClipboard = useCallback(async () => {
