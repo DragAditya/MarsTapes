@@ -15,75 +15,66 @@ import './App.css';
 
 function AppContent() {
   const { state, dispatch } = useApp();
-  const { isMobile, currentReceipt } = state;  // ✅ Removed unused 'settings'
-  // Only use what's needed
-}
-
-  // BUG FIX: PIN lock is now set in getInitialState — no need for this effect.
-  // Removed the old effect which had missing deps and ran after render.
-
-  // BUG FIX: Use a ref to get the visible receipt card for PDF/image capture.
-  // Previously used document.getElementById which found the HIDDEN print-area element first,
-  // causing blank exports.
+  const { isMobile, currentReceipt } = state;
   const captureRef = useRef<HTMLDivElement>(null);
 
-  // PDF download handler
   const handleDownloadPDF = useCallback(() => {
     const el = captureRef.current;
     if (!el) return;
 
-    // BUG FIX: Reset 3D tilt transform before capture so the image isn't skewed
     const savedTransform = el.style.transform;
     el.style.transform = 'none';
 
-    html2canvas(el, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
-      el.style.transform = savedTransform; // restore
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: [80, (canvas.height * 80) / canvas.width + 10],
+    html2canvas(el, { scale: 2, backgroundColor: '#ffffff' })
+      .then((canvas) => {
+        el.style.transform = savedTransform;
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: [80, (canvas.height * 80) / canvas.width + 10],
+        });
+        pdf.addImage(imgData, 'PNG', 0, 5, 80, (canvas.height * 80) / canvas.width);
+        pdf.save(`${currentReceipt.receiptNo || 'receipt'}.pdf`);
+      })
+      .catch(() => {
+        el.style.transform = savedTransform;
       });
-      pdf.addImage(imgData, 'PNG', 0, 5, 80, (canvas.height * 80) / canvas.width);
-      pdf.save(`${currentReceipt.receiptNo || 'receipt'}.pdf`);
-    }).catch(() => {
-      el.style.transform = savedTransform;
-    });
   }, [currentReceipt.receiptNo]);
 
-  // Image download handler
   const handleDownloadImage = useCallback(() => {
     const el = captureRef.current;
     if (!el) return;
 
-    // BUG FIX: Reset 3D tilt transform before capture
     const savedTransform = el.style.transform;
     el.style.transform = 'none';
 
-    html2canvas(el, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
-      el.style.transform = savedTransform;
-      const link = document.createElement('a');
-      link.download = `${currentReceipt.receiptNo || 'receipt'}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    }).catch(() => {
-      el.style.transform = savedTransform;
-    });
+    html2canvas(el, { scale: 2, backgroundColor: '#ffffff' })
+      .then((canvas) => {
+        el.style.transform = savedTransform;
+        const link = document.createElement('a');
+        link.download = `${currentReceipt.receiptNo || 'receipt'}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      })
+      .catch(() => {
+        el.style.transform = savedTransform;
+      });
   }, [currentReceipt.receiptNo]);
 
-  // Listen for download events from header
   useEffect(() => {
     const handlePdfEvent = () => handleDownloadPDF();
     const handleImgEvent = () => handleDownloadImage();
+
     window.addEventListener('download-pdf', handlePdfEvent);
     window.addEventListener('download-image', handleImgEvent);
+
     return () => {
       window.removeEventListener('download-pdf', handlePdfEvent);
       window.removeEventListener('download-image', handleImgEvent);
     };
   }, [handleDownloadPDF, handleDownloadImage]);
 
-  // Print styles
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
@@ -94,24 +85,22 @@ function AppContent() {
       }
     `;
     document.head.appendChild(style);
-    return () => { document.head.removeChild(style); };
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
 
   return (
     <>
-      {/* PIN Lock */}
       {state.pinLocked && <PinLock />}
 
       <div className="min-h-screen bg-[#F8F9FA]">
         <Header />
 
-        {/* Print-only area — BUG FIX: uses id="receipt-print-card" so it doesn't
-            conflict with the visible card's id used for PDF/image capture */}
         <div id="print-area" className="hidden print:block">
           <ReceiptPreview cardId="receipt-print-card" />
         </div>
 
-        {/* Main content */}
         <div className="non-print pt-16">
           {isMobile ? (
             <MobileLayout captureRef={captureRef} dispatch={dispatch} />
@@ -127,10 +116,13 @@ function AppContent() {
   );
 }
 
-function DesktopLayout({ captureRef }: { captureRef: React.RefObject<HTMLDivElement | null> }) {
+interface DesktopLayoutProps {
+  captureRef: React.RefObject<HTMLDivElement | null>;
+}
+
+function DesktopLayout({ captureRef }: DesktopLayoutProps) {
   return (
     <div className="grid grid-cols-[55%_45%] h-[calc(100vh-64px)]">
-      {/* Left: Form */}
       <div className="overflow-y-auto p-6 lg:p-8">
         <ReceiptForm />
         <div className="max-w-3xl mx-auto">
@@ -138,12 +130,10 @@ function DesktopLayout({ captureRef }: { captureRef: React.RefObject<HTMLDivElem
         </div>
       </div>
 
-      {/* Right: Preview */}
       <div className="relative overflow-y-auto">
         <GradientCanvas />
         <div className="relative z-10 flex items-center justify-center min-h-full p-8">
           <div className="w-full max-w-md">
-            {/* BUG FIX: captureRef points here — this is the VISIBLE element for export */}
             <ReceiptPreview captureRef={captureRef} />
           </div>
         </div>
@@ -152,13 +142,17 @@ function DesktopLayout({ captureRef }: { captureRef: React.RefObject<HTMLDivElem
   );
 }
 
-function MobileLayout({ captureRef }: { captureRef: React.RefObject<HTMLDivElement | null> }) {
-  const { state, dispatch } = useApp();
+interface MobileLayoutProps {
+  captureRef: React.RefObject<HTMLDivElement | null>;
+  dispatch: any;
+}
+
+function MobileLayout({ captureRef, dispatch }: MobileLayoutProps) {
+  const { state } = useApp();
   const { mobileTab } = state;
 
   return (
     <div className="h-[calc(100vh-64px)] flex flex-col">
-      {/* Tab Switcher */}
       <div className="shrink-0 flex items-center gap-1 p-2 bg-white border-b border-gray-200">
         <button
           onClick={() => dispatch({ type: 'SET_MOBILE_TAB', payload: 'form' })}
@@ -182,7 +176,6 @@ function MobileLayout({ captureRef }: { captureRef: React.RefObject<HTMLDivEleme
         </button>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {mobileTab === 'form' ? (
           <div className="p-4">
@@ -191,7 +184,6 @@ function MobileLayout({ captureRef }: { captureRef: React.RefObject<HTMLDivEleme
           </div>
         ) : (
           <div className="p-4 bg-white">
-            {/* BUG FIX: captureRef also attached here when in mobile preview mode */}
             <ReceiptPreview captureRef={captureRef} />
           </div>
         )}
