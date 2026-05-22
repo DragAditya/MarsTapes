@@ -15,7 +15,9 @@ import './App.css';
 
 function AppContent() {
   const { state, dispatch } = useApp();
-  const { isMobile, settings, currentReceipt } = state;
+  const { isMobile, currentReceipt } = state;  // ✅ Removed unused 'settings'
+  // Only use what's needed
+}
 
   // BUG FIX: PIN lock is now set in getInitialState — no need for this effect.
   // Removed the old effect which had missing deps and ran after render.
@@ -112,7 +114,7 @@ function AppContent() {
         {/* Main content */}
         <div className="non-print pt-16">
           {isMobile ? (
-            <MobileLayout captureRef={captureRef} />
+            <MobileLayout captureRef={captureRef} dispatch={dispatch} />
           ) : (
             <DesktopLayout captureRef={captureRef} />
           )}
