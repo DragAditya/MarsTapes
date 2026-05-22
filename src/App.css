@@ -1,0 +1,84 @@
+/* Receipt zig-zag edges */
+.receipt-edge-top,
+.receipt-edge-bottom {
+  width: 100%;
+  height: 18px;
+  background-image:
+    linear-gradient(135deg, transparent 50%, #FFFFFF 50%),
+    linear-gradient(45deg, #FFFFFF 50%, transparent 50%);
+  background-position: top left;
+  background-repeat: repeat-x;
+  background-size: 16px 18px;
+}
+
+.receipt-edge-top {
+  transform: rotate(180deg);
+}
+
+/* Hide scrollbar */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Print styles */
+@media print {
+  .non-print {
+    display: none !important;
+  }
+}
+
+/* Smooth focus ring for dynamic colors */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Input number spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+/* Color input styling */
+input[type="color"] {
+  -webkit-appearance: none;
+  border: none;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 6px;
+}
+
+/* Date input styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
